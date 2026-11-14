@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8.5",
+  "package": "com.example.Ieadd.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "ieadd.refmap.json",
+  "mixins": [],
+  "client": [
+    "RailgunCallbacksMixin",
+    "HumanoidModelMixin",
+    "ItemInHandRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,108 @@
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.neoforged.moddev.legacyforge' version '2.0.148'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+legacyForge {
+    version = "1.20.1-47.3.0"
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+        }
+        data {
+            data()
+            programArguments.addAll '--mod', mod_id, '--all',
+                    '--output', file('src/generated/resources/').getAbsolutePath(),
+                    '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+repositories {
+    maven { url = "https://cursemaven.com" }
+
+    maven { url = "https://api.modrinth.com/maven" }
+    maven { url = "https://cursemaven.com" }
+
+}
+
+
+dependencies {
+    // IE 10.2.0-183 для 1.20.1
+    modImplementation "curse.maven:immersive-engineering-231951:5224387"
+    modImplementation "curse.maven:mmmmmmmmmmmm-225738:5319203"
+    modImplementation "curse.maven:selene-499980:6740431"
+
+
+    tasks.withType(ProcessResources).configureEach {
+        var replaceProperties = [
+                minecraft_version      : minecraft_version,
+                minecraft_version_range: minecraft_version_range,
+                forge_version          : forge_version,
+                forge_version_range    : forge_version_range,
+                loader_version_range   : loader_version_range,
+                mod_id                 : mod_id,
+                mod_name               : mod_name,
+                mod_license            : mod_license,
+                mod_version            : mod_version,
+                mod_authors            : mod_authors,
+                mod_description        : mod_description,
+                pack_format_number     : pack_format_number
+        ]
+        inputs.properties replaceProperties
+        filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+            expand replaceProperties + [project: project]
+        }
+
+
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
+
+    tasks.named('jar', Jar).configure {
+        manifest {
+            attributes([
+                    "MixinConfigs": "ieadd.mixins.json"   // <-- ДОБАВИТЬ ЭТУ СТРОКУ
+            ])
+        }
+    }
+
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+}
+
+mixin {
+    add sourceSets.main, "ieadd.refmap.json"
+    config "ieadd.mixins.json"
+}
+
+jar {
+    manifest.attributes([
+            "MixinConfigs": "ieadd.mixins.json"
+    ])
+}

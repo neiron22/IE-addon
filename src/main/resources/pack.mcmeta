@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "description": "IEAdd resources",
+    "pack_format": ${pack_format_number}
+}
+}
