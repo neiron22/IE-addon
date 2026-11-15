@@ -4,12 +4,20 @@ import blusunrize.immersiveengineering.api.tool.RailgunHandler;
 import com.example.Ieadd.Ieadd;
 import com.example.Ieadd.common.CustomRailgunShotEntity;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -23,7 +31,7 @@ import java.util.UUID;
 @Mod.EventBusSubscriber(modid = Ieadd.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class RailgunEvents {
 
-    public static void reregisterDamage(Item item , double damage){
+    public static void reRegisterDamage(Item item , double damage){
         if (item != null) {
             // Удаляем стандартный обработчик IE
             RailgunHandler.projectilePropertyMap.removeIf(pair ->
@@ -33,7 +41,7 @@ public class RailgunEvents {
             // Явно указываем типы <Supplier<Ingredient>, IRailgunProjectile>
             RailgunHandler.projectilePropertyMap.add(0, Pair.of(
                     () -> ingredient,
-                    new CustomRailgunProjectile(damage)
+                    new CustomRailgunProjectile(item,damage)
             ));
         }
     }
@@ -46,35 +54,37 @@ public class RailgunEvents {
 
         //железный стержень
        Item ironRod = ForgeRegistries.ITEMS.getValue(new ResourceLocation("immersiveengineering", "stick_iron"));
-        reregisterDamage(ironRod , 28.0);
+        reRegisterDamage(ironRod , 28.0);
         Item steelRod = ForgeRegistries.ITEMS.getValue(new ResourceLocation("immersiveengineering", "stick_steel"));
-        reregisterDamage(steelRod , 45.0);
+        reRegisterDamage(steelRod , 45.0);
 
         Item aluminumRod = ForgeRegistries.ITEMS.getValue(new ResourceLocation("immersiveengineering", "stick_aluminum"));
-        reregisterDamage(aluminumRod , 22.0);
+        reRegisterDamage(aluminumRod , 20.0);
 
         Item graphite_electrodeRod = ForgeRegistries.ITEMS.getValue(new ResourceLocation("immersiveengineering", "graphite_electrode"));
-        reregisterDamage(graphite_electrodeRod , 96.0);
+        reRegisterDamage(graphite_electrodeRod , 96.0);
 
         Item sawbladeRod = ForgeRegistries.ITEMS.getValue(new ResourceLocation("immersiveengineering", "sawblade"));
-        reregisterDamage(sawbladeRod , 70.0);
-
+        reRegisterDamage(sawbladeRod , 70.0);
+        // вот тут например
+        
+        
         Item blaze_rodRod = ForgeRegistries.ITEMS.getValue(new ResourceLocation("minecraft", "blaze_rod"));
-        reregisterDamage(blaze_rodRod , 40.0);
+        reRegisterDamage(blaze_rodRod , 38.0);
+        
         });
     }
 
     // Внутренний класс, который реализует логику урона
     public static class CustomRailgunProjectile implements RailgunHandler.IRailgunProjectile {
 
-        // 1. Создаем поле для хранения урона конкретного снаряда
+
         private final double damage;
+        private final Item ammoItem;
+        private static final double GRAVITY = 0.8;
 
-        // 2. Создаем общую константу для гравитации (одинаковая для всех)
-        private static final double GRAVITY = 0.2;
-
-        // 3. Создаем конструктор, через который будем передавать урон при регистрации
-        public CustomRailgunProjectile(double damage) {
+        public CustomRailgunProjectile(Item ammoItem, double damage) {
+            this.ammoItem = ammoItem;
             this.damage = damage;
         }
 
@@ -92,17 +102,65 @@ public class RailgunEvents {
             return 0.0; // 0.0 = 0% шанс исчезновения, 1.0 = 100%
         }
 
+
         @Override
         public Entity getProjectile(@Nullable Player shooter, ItemStack ammo, Entity defaultProjectile) {
-            // Если shooter равен null (например, выстрел из раздатчика), возвращаем стандартный снаряд
-
             if (shooter == null) {
                 return defaultProjectile;
             }
 
-            // Создаем наш кастомный снаряд.
-            // 3.0F и 1.0F — это стандартные скорость и точность, можете оставить их.
-            return new CustomRailgunShotEntity(shooter.level(), shooter, 3.0F, 1.0F, ammo);
+            // 1. Создаем наш снаряд
+            CustomRailgunShotEntity projectile = new CustomRailgunShotEntity(shooter.level(), shooter, 3.0F, 1.0F, ammo);
+
+            // 2. Получаем точку глаз игрока (откуда смотрит камера)
+            Vec3 eyePos = shooter.getEyePosition(1.0F);
+
+            // 3. Получаем вектор взгляда (куда смотрит игрок)
+            Vec3 lookVec = shooter.getViewVector(1.0F);
+
+            // 4. Сдвигаем точку появления чуть вперед, чтобы снаряд не задел самого стрелка
+            Vec3 spawnPos = eyePos.add(lookVec.scale(0.5));
+
+            // 5. Устанавливаем снаряду точную позицию и направление полета
+            projectile.setPos(spawnPos.x, spawnPos.y, spawnPos.z);
+            projectile.shoot(lookVec.x, lookVec.y, lookVec.z, 3.0F, 0.0F); // 3.0F - скорость, 0.0F - без разброса
+
+            return projectile;
+        }
+
+        @Override
+        public void onHitTarget(Level world, HitResult target, @Nullable UUID shooter, Entity projectile) {
+            // Проверяем, что мы на сервере и попали в сущность
+            if (world.isClientSide || !(target instanceof EntityHitResult entityHit)) {
+                return;
+            }
+
+            Entity hitEntity = entityHit.getEntity();
+
+            // --- СПЕЦИАЛЬНЫЕ ЭФФЕКТЫ ДЛЯ РАЗНЫХ СНАРЯДОВ ---
+
+            // 1. Пильный диск: ломает блоки (если попал в блок)
+            if (this.ammoItem == ForgeRegistries.ITEMS.getValue(new ResourceLocation("immersiveengineering", "sawblade"))) {
+                if (target instanceof BlockHitResult blockHit) {
+                    // Пример логики: ломаем блок
+                    world.destroyBlock(blockHit.getBlockPos(), true);
+                }
+            }
+
+            // 2. Огненный стержень: поджигает цель
+            if (this.ammoItem == Items.BLAZE_ROD) {
+                if (hitEntity != null) {
+                    hitEntity.setSecondsOnFire(12); // Поджигаем на 12 секунд
+                }
+            }
+
+            // 3. Графитовый электрод: накладывает эффект или наносит доп. урон
+            if (this.ammoItem == ForgeRegistries.ITEMS.getValue(new ResourceLocation("immersiveengineering", "graphite_electrode"))) {
+                if (hitEntity instanceof LivingEntity living) {
+                    // Пример: накладываем эффект "Слабость" на 3 секунды
+                    living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 60, 1));
+                }
+            }
         }
     }
 }

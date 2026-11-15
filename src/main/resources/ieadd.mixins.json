@@ -4,7 +4,10 @@
   "package": "com.example.Ieadd.mixin",
   "compatibilityLevel": "JAVA_17",
   "refmap": "ieadd.refmap.json",
-  "mixins": [],
+  "mixins": [
+    "Chemthrower.ChemthrowerItemMixin",
+    "Chemthrower.ChemthrowerShotEntityMixin"
+  ],
   "client": [
     "RailgunCallbacksMixin",
     "HumanoidModelMixin",

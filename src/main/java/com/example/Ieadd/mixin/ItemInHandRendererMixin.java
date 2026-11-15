@@ -1,5 +1,7 @@
 package com.example.Ieadd.mixin;
 
+
+import blusunrize.immersiveengineering.common.items.ChemthrowerItem;
 import blusunrize.immersiveengineering.common.items.RailgunItem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.player.AbstractClientPlayer;
@@ -20,12 +22,20 @@ public class ItemInHandRendererMixin {
 
         // Если в руке рельсотрон
         if (stack.getItem() instanceof RailgunItem) {
-            int direction = (hand == InteractionHand.MAIN_HAND) ? 1 : -1;
+            //int direction = (hand == InteractionHand.MAIN_HAND) ? 1 : -1;
 
             // --- НАСТРОЙКА ПОЛОЖЕНИЯ РУКИ ОТ ПЕРВОГО ЛИЦА ---
-            poseStack.translate(direction * 0.35F, -0.2F, -0.1F);
-            poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(direction * 15.0F));
-            poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(5.0F));
+            //poseStack.translate(direction * 0.35F, -0.2F, -0.1F);
+            //poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(direction * 15.0F));
+            //poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(5.0F));
+            poseStack.scale(1.4F , 1.4F,1.4F);
         }
+
+        if (stack.getItem() instanceof ChemthrowerItem && player.isUsingItem()) {
+            poseStack.translate(0.0F, -0.2F, 0.0F);
+        }
+
     }
+
+
 }

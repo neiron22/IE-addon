@@ -21,4 +21,5 @@ public class ModEntities {
                             .clientTrackingRange(4) // Радиус, в котором клиенты видят сущность
                             .updateInterval(20) // Как часто обновляется позиция
                             .build("custom_railgun_shot"));
+
 }

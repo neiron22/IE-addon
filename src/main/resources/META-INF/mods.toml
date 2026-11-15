@@ -6,6 +6,7 @@ license="${mod_license}"
 modId="ieadd"
 version="0.0.0"
 displayName="IE Addon"
+logoFile="logo.png"
 description='''Addon for Immersive Engineering'''
 authors="fedyushkinkirill"
 
