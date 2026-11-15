@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(PlayerModel.class)
 public class HumanoidModelMixin<T extends LivingEntity> {
 
-    @Inject(method = "setupAnim", at = @At("TAIL"), remap = false)
+    @Inject(method = "setupAnim", at = @At("TAIL") , remap = true)
     private void onSetupAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, CallbackInfo ci) {
 
         if (entity instanceof Player player) {

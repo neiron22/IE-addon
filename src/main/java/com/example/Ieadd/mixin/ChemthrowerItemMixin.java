@@ -1,4 +1,4 @@
-package com.example.Ieadd.mixin.Chemthrower;
+package com.example.Ieadd.mixin;
 
 import blusunrize.immersiveengineering.common.entities.ChemthrowerShotEntity;
 import blusunrize.immersiveengineering.common.items.ChemthrowerItem;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 public class ChemthrowerItemMixin {
 
     // Перехватываем переменную 'chem' в момент её создания
-    @ModifyVariable(method = "onUseTick", at = @At(value = "STORE"), ordinal = 0)
+    @ModifyVariable(method = {"m_5929_" , "onUseTick"}, at = @At(value = "STORE"), ordinal = 0, remap = false)
     private ChemthrowerShotEntity modifyChemthrowerShot(ChemthrowerShotEntity chem, Level level, LivingEntity player, ItemStack stack, int duration) {
         if (!level.isClientSide && chem != null) {
             // Вычисляем точку вылета

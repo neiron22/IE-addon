@@ -56,8 +56,8 @@ dependencies {
     modImplementation "curse.maven:immersive-engineering-231951:5224387"
     modImplementation "curse.maven:mmmmmmmmmmmm-225738:5319203"
     modImplementation "curse.maven:selene-499980:6740431"
-
-
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    compileOnly 'org.spongepowered:mixin:0.8.5'
     tasks.withType(ProcessResources).configureEach {
         var replaceProperties = [
                 minecraft_version      : minecraft_version,
@@ -92,8 +92,6 @@ dependencies {
             ])
         }
     }
-
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
 mixin {

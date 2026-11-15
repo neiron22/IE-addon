@@ -4,11 +4,11 @@ license="${mod_license}"
 
 [[mods]]
 modId="ieadd"
-version="0.0.0"
+version="${mod_version}"
 displayName="IE Addon"
 logoFile="logo.png"
-description='''Addon for Immersive Engineering'''
-authors="fedyushkinkirill"
+description='''${mod_description}'''
+authors="${mod_authors}"
 
 [[dependencies.ieadd]]
 modId="forge"

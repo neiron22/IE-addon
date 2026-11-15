@@ -1,4 +1,4 @@
-package com.example.Ieadd.mixin.Chemthrower;
+package com.example.Ieadd.mixin;
 
 import blusunrize.immersiveengineering.common.entities.ChemthrowerShotEntity;
 import net.minecraft.core.BlockPos;
@@ -18,7 +18,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class ChemthrowerShotEntityMixin {
 
     // Внедряемся в конец метода onHit, который есть прямо в этом классе
-    @Inject(method = "onHit", at = @At("TAIL"), remap = false)
+    @SuppressWarnings("Mixin")
+    @Inject(method = {"m_6532_", "onHit"}, at = @At("TAIL"), remap = false)
     private void onHitTail(HitResult mop, CallbackInfo ci) {
         Entity entity = (Entity) (Object) this;
 
