@@ -11,7 +11,8 @@
   "client": [
     "RailgunCallbacksMixin",
     "HumanoidModelMixin",
-    "ItemInHandRendererMixin"
+    "ItemInHandRendererMixin",
+    "RailgunItemMixin"
   ],
   "injectors": {
     "defaultRequire": 1

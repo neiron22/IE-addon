@@ -17,7 +17,7 @@ public class ModEntities {
     public static final RegistryObject<EntityType<CustomRailgunShotEntity>> CUSTOM_RAILGUN_SHOT =
             ENTITY_TYPES.register("custom_railgun_shot",
                     () -> EntityType.Builder.<CustomRailgunShotEntity>of(CustomRailgunShotEntity::new, MobCategory.MISC)
-                            .sized(0.5F, 0.5F) // Размер хитбокса (ширина, высота)
+                            .sized(0.115F, 0.115F) // Размер хитбокса (ширина, высота)
                             .clientTrackingRange(4) // Радиус, в котором клиенты видят сущность
                             .updateInterval(20) // Как часто обновляется позиция
                             .build("custom_railgun_shot"));

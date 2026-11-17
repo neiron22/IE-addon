@@ -2,6 +2,7 @@ package com.example.Ieadd.mixin;
 
 import blusunrize.immersiveengineering.common.items.ChemthrowerItem;
 import blusunrize.immersiveengineering.common.items.RailgunItem;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.world.entity.LivingEntity;
@@ -16,6 +17,9 @@ public class HumanoidModelMixin<T extends LivingEntity> {
 
     @Inject(method = "setupAnim", at = @At("TAIL") , remap = true)
     private void onSetupAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, CallbackInfo ci) {
+
+
+        if (Minecraft.getInstance().screen != null) return;
 
         if (entity instanceof Player player) {
             PlayerModel<T> model = (PlayerModel<T>) (Object) this;

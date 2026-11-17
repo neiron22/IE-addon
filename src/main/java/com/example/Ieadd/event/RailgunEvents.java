@@ -62,15 +62,14 @@ public class RailgunEvents {
         reRegisterDamage(aluminumRod , 20.0);
 
         Item graphite_electrodeRod = ForgeRegistries.ITEMS.getValue(new ResourceLocation("immersiveengineering", "graphite_electrode"));
-        reRegisterDamage(graphite_electrodeRod , 96.0);
+        reRegisterDamage(graphite_electrodeRod , 88.0);
 
         Item sawbladeRod = ForgeRegistries.ITEMS.getValue(new ResourceLocation("immersiveengineering", "sawblade"));
-        reRegisterDamage(sawbladeRod , 70.0);
-        // вот тут например
-        
-        
-        Item blaze_rodRod = ForgeRegistries.ITEMS.getValue(new ResourceLocation("minecraft", "blaze_rod"));
-        reRegisterDamage(blaze_rodRod , 38.0);
+        reRegisterDamage(sawbladeRod , 44.0);
+
+        reRegisterDamage(Items.COPPER_INGOT, 12.0);
+
+        reRegisterDamage(Items.BLAZE_ROD , 38.0);
         
         });
     }
@@ -112,14 +111,20 @@ public class RailgunEvents {
             // 1. Создаем наш снаряд
             CustomRailgunShotEntity projectile = new CustomRailgunShotEntity(shooter.level(), shooter, 3.0F, 1.0F, ammo);
 
-            // 2. Получаем точку глаз игрока (откуда смотрит камера)
-            Vec3 eyePos = shooter.getEyePosition(1.0F);
 
-            // 3. Получаем вектор взгляда (куда смотрит игрок)
+            Vec3 eyePos = shooter.getEyePosition(1.0F);
             Vec3 lookVec = shooter.getViewVector(1.0F);
 
-            // 4. Сдвигаем точку появления чуть вперед, чтобы снаряд не задел самого стрелка
-            Vec3 spawnPos = eyePos.add(lookVec.scale(0.5));
+            // Вычисляем вектор "вправо" относительно взгляда
+            Vec3 rightVec = lookVec.cross(new Vec3(0, 1, 0)).normalize().scale(-1.0);
+
+            // Смещаем снаряд: 0.6 вперед (к дулу) и 0.15 вправо
+            Vec3 spawnPos = eyePos
+                    .add(lookVec.scale(0.6))
+                    .add(rightVec.scale(0.15));
+
+            projectile.setPos(spawnPos.x, spawnPos.y, spawnPos.z);
+            projectile.shoot(lookVec.x, lookVec.y, lookVec.z, 3.0F, 0.0F);
 
             // 5. Устанавливаем снаряду точную позицию и направление полета
             projectile.setPos(spawnPos.x, spawnPos.y, spawnPos.z);
@@ -150,7 +155,7 @@ public class RailgunEvents {
             // 2. Огненный стержень: поджигает цель
             if (this.ammoItem == Items.BLAZE_ROD) {
                 if (hitEntity != null) {
-                    hitEntity.setSecondsOnFire(12); // Поджигаем на 12 секунд
+                    hitEntity.setSecondsOnFire(7); // Поджигаем на 7 секунд
                 }
             }
 

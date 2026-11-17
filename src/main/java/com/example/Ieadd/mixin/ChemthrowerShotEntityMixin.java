@@ -39,7 +39,7 @@ public class ChemthrowerShotEntityMixin {
         // Если снаряд горит на 200 тиков, шанс = 100% (1.0F)
         // Если на 100 тиков — шанс 50% (0.5F)
         // Если на 20 тиков — шанс 10% (0.1F)
-        float chanceToSpawnFire = Math.min(1.0F, fireTicks / 800.0F);
+        float chanceToSpawnFire = Math.min(1.0F, fireTicks / 1200.0F);
 
         // 4. БРОСАЕМ КУБИК
         // Если случайное число больше нашего шанса — огонь НЕ появляется
@@ -51,8 +51,6 @@ public class ChemthrowerShotEntityMixin {
         BlockHitResult blockHit = (BlockHitResult) mop;
         BlockPos hitPos = blockHit.getBlockPos();
 
-        // Количество очагов огня тоже зависит от горючести (от 1 до 5)
-        int attempts = 1 + (fireTicks / 80);
 
         // 2. Пытаемся создать ванильный огонь в радиусе 1 блока от места удара
         for (int i = 0; i < 3; i++) {

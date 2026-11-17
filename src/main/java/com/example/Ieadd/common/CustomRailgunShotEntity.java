@@ -4,11 +4,13 @@ import blusunrize.immersiveengineering.api.tool.RailgunHandler;
 import blusunrize.immersiveengineering.common.config.IEServerConfig;
 import blusunrize.immersiveengineering.common.entities.RailgunShotEntity;
 import blusunrize.immersiveengineering.common.util.IEDamageSources;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -25,8 +27,9 @@ public class CustomRailgunShotEntity extends RailgunShotEntity {
     private boolean hasDroppedItem = false;
     // Флаг: true, если снаряд удаляется из-за попадания
     private boolean isImpactDiscard = false;
-    //private boolean hasPlayedHitSound = false;
-    //private boolean isStuck = false;
+    private boolean isStuck = false;
+    private BlockPos stuckBlockPos;
+    private net.minecraft.core.Direction hitFace = net.minecraft.core.Direction.UP;
 
     @SuppressWarnings("unchecked")
     public CustomRailgunShotEntity(EntityType<?> type, Level world) {
@@ -50,7 +53,7 @@ public class CustomRailgunShotEntity extends RailgunShotEntity {
     @Override
     public double getGravity() {
         // Получаем базовую гравитацию (0.005 * 0.2 = 0.001)
-        double baseGravity = super.getGravity();
+        double baseGravity = super.getGravity();;
 
         // Увеличиваем гравитацию на 50% с каждым попаданием (1.0 + 0.5 * hitCount)
         // Можете изменить 0.5 на 1.0, если хотите, чтобы он падал быстрее
@@ -65,6 +68,10 @@ public class CustomRailgunShotEntity extends RailgunShotEntity {
         if (this.getAmmo().getItem() != ForgeRegistries.ITEMS.getValue(new ResourceLocation("immersiveengineering", "sawblade"))) {
             this.isImpactDiscard = true;
             super.onHitEntity(result);
+            Entity hit = result.getEntity();
+            if (hit instanceof LivingEntity livingHit) {
+                livingHit.invulnerableTime = 0;
+            }
             return;
         }
 
@@ -74,29 +81,7 @@ public class CustomRailgunShotEntity extends RailgunShotEntity {
             // 1. Увеличиваем счетчик попаданий (для гравитации)
             this.hitCount++;
 
-            // 2. Уменьшаем прочность диска (на 1 единицу за каждое попадание)
-            ItemStack ammoStack = this.getAmmo();
-            if (ammoStack.isDamageableItem()) { // Проверяем, имеет ли предмет прочность
-                int currentDamage = ammoStack.getDamageValue();
-
-                int durabilityLossPerHit = 600;
-
-
-                if (currentDamage + durabilityLossPerHit >= ammoStack.getMaxDamage()) {
-                    // Диск сломался! Удаляем снаряд и не дропаем сломанный предмет
-                    this.isImpactDiscard = true;
-                    this.discard();
-                    return; // Выходим из метода, дальше урон наносить не нужно
-                } else {
-                    ammoStack.setDamageValue(currentDamage + durabilityLossPerHit);
-                    // Синхронизируем изменения с клиентом (чтобы модель/данные обновились)
-                    this.setAmmoSynced();
-                }
-            }
-
-
-
-            // 3. Наносим урон (как в вашем предыдущем коде)
+            // 2. СНАЧАЛА НАНОСИМ УРОН (чтобы он прошел, даже если диск сейчас сломается)
             RailgunHandler.IRailgunProjectile props = this.getProjectileProperties();
             if (props != null) {
                 Entity hit = result.getEntity();
@@ -108,18 +93,86 @@ public class CustomRailgunShotEntity extends RailgunShotEntity {
                     source = IEDamageSources.causeRailgunDamage(this, this.getOwner());
                 }
                 hit.hurt(source, (float)(damage * IEServerConfig.TOOLS.railgun_damage.get()));
+
                 props.onHitTarget(this.level(), result, shooterUuid, this);
+            }
+
+            // 3. ТЕПЕРЬ ПРОВЕРЯЕМ ПРОЧНОСТЬ
+            ItemStack ammoStack = this.getAmmo();
+            if (ammoStack.isDamageableItem()) {
+                int currentDamage = ammoStack.getDamageValue();
+                int durabilityLossPerHit = 800;
+
+                if (currentDamage + durabilityLossPerHit >= ammoStack.getMaxDamage()) {
+                    // Диск сломался! Удаляем снаряд и не дропаем сломанный предмет
+                    this.isImpactDiscard = true;
+                    this.discard();
+                    // return тут больше не нужен, так как это конец метода
+                } else {
+                    ammoStack.setDamageValue(currentDamage + durabilityLossPerHit);
+                    // Синхронизируем изменения с клиентом
+                    this.setAmmoSynced();
+                }
+
+
             }
         }
     }
 
-    // 2. Перехватываем попадание в блок
     @Override
     protected void onHitBlock(BlockHitResult result) {
-        this.setDeltaMovement(0, 0, 0);
+        if (this.isStuck) {
+            // Если блок, в который мы воткнулись, стал пустым — удаляем снаряд
+            if (this.stuckBlockPos != null && this.level().isEmptyBlock(this.stuckBlockPos)) {
+                this.discard(); // Вызовет onRemovedFromWorld, и предмет выпадет
+            }
+            return; // Выходим, чтобы не применять эффекты повторно
+        }
+        // Запоминаем грань, в которую попали
+        this.hitFace = result.getDirection();
+        this.inGround = true;
+        this.isStuck = true; // флаг вкл , физика выкл
+        this.stuckBlockPos = result.getBlockPos();
         super.onHitBlock(result);
+        this.setDeltaMovement(Vec3.ZERO);
+        this.setNoGravity(true);
+        // 3. Жестко фиксируем координаты ровно в точке касания блока
+        this.setPos(result.getLocation().x, result.getLocation().y, result.getLocation().z);
+
+        Vec3 hitLoc = result.getLocation();
+        net.minecraft.core.Direction face = result.getDirection();
+        double offset = -0.05;
+        this.setPos(
+                hitLoc.x + face.getStepX() * offset,
+                hitLoc.y + face.getStepY() * offset,
+                hitLoc.z + face.getStepZ() * offset
+        );
+
     }
 
+    @Override
+    public void move(MoverType type, Vec3 pos) {
+        // Если снаряд застрял, мы блокируем любые попытки сдвинуть его с места
+        if (this.isStuck) {
+            return;
+        }
+        super.move(type, pos);
+    }
+    @Override
+    public Vec3 getLightProbePosition(float partialTicks) {
+        // Если снаряд застрял в блоке
+        if (this.isStuck) {
+            // Берем нашу позицию и сдвигаем её на 0.6 блока наружу от грани
+            double offset = 0.6;
+            return new Vec3(
+                    this.getX() + this.hitFace.getStepX() * offset,
+                    this.getY() + this.hitFace.getStepY() * offset,
+                    this.getZ() + this.hitFace.getStepZ() * offset
+            );
+        }
+        // Если летит — стандартная точка
+        return super.getLightProbePosition(partialTicks);
+    }
     // 3. Перехватываем само удаление
     @Override
     public void onRemovedFromWorld() {
